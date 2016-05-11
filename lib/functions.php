@@ -752,9 +752,22 @@ function coroutine(callable $func) {
  * Upon resolution the Generator return value is used to succeed the promised result. If an
  * error occurs during coroutine resolution the returned promise fails.
  *
- * @param \Generator $generator The generator to resolve as a coroutine
+ * @param \Generator|callable $generator A generator or callable that returns a generator to resolve as a coroutine
+ * @return \Amp\Promise
  */
-function resolve(\Generator $generator) {
+function resolve($generator) {
+    if (!$generator instanceof \Generator) {
+        if (!is_callable($generator)) {
+            throw new \InvalidArgumentException('Co-routine to resolve must be callable or instance of Generator');
+        }
+
+        $generator = call_user_func($generator);
+
+        if (!$generator instanceof \Generator) {
+            throw new \LogicException('Callable passed to resolve() did not return an instance of Generator');
+        }
+    }
+
     $cs = new CoroutineState;
     $cs->promisor = new Deferred;
     $cs->generator = $generator;
